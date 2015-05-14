@@ -22,6 +22,8 @@ A simple tool to coregister the PSMove and DK2. Currently, all it does is get th
 7. Make sure your PSMove and DK2 are both in view of their cameras.
 8. Run psmdk2.exe
     * Alternatively, if you want to output the data to a file, try `psmdk2 > output.csv`
-9. Press & Hold the PSMove Move button to print data (to screen or file)
-10. Press PSMove select button to quit.
-11. Delete the first two lines from the output file.
+8. Attach the PSMove to the DK2.
+9. If you like, press the PSMove Circle button once to zero positional data for both PSMove and DK2, and to reset the PSMove orientation and DK2 yaw.
+10. Press & Hold the PSMove Move button to print data (to screen or file) while you move the objects in the camera frustrums.
+11. Press PSMove select button to quit.
+12. Delete the first two lines from the output file.

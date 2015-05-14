@@ -45,9 +45,11 @@ int main(int arg, char** args) {
                 ovrTrackingCap_Position, 0);
     ovrTrackingState dk2state;
     
-    int ch;
+    float psm_x_offset = 0.0;
+    float psm_y_offset = 0.0;
+    float psm_z_offset = 0.0;
     printf("psm_px,psm_py,psm_pz,psm_ox,psm_oy,psm_oz,psm_ow,dk2_px,dk2_py,dk2_pz,dk2_ox,dk2_oy,dk2_oz,dk2_ow\n");
-    while (1)//(ch = _getch()) != EOF && ch != 'q')
+    while (1)
     {
         psmove_tracker_update_image(tracker);
         psmove_tracker_update(tracker, NULL);
@@ -66,9 +68,18 @@ int main(int arg, char** args) {
         
         buttons = psmove_get_buttons(controllers[i]);
 
+        if (buttons & Btn_CIRCLE)
+        {
+            psm_x_offset = psm_px;
+            psm_y_offset = psm_py;
+            psm_z_offset = psm_pz;
+            ovrHmd_RecenterPose(HMD);
+            psmove_reset_orientation(controllers[i]);
+        }
+
         if (buttons & Btn_MOVE)
             printf("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-                psm_px, psm_py, psm_pz,
+                psm_px-psm_x_offset, psm_py-psm_y_offset, psm_pz-psm_z_offset,
                 psm_ox, psm_oy, psm_oz, psm_ow,
                 dk2state.HeadPose.ThePose.Position.x,
                 dk2state.HeadPose.ThePose.Position.y,
