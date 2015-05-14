@@ -1,5 +1,5 @@
 # psmove_dk2_coreg
-A simple tool to coregister the PSMove and DK2
+A simple tool to coregister the PSMove and DK2. Currently, all it does is get the position and orientation data straight from the APIs.
 
 # Warnings
 
