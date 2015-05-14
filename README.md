@@ -24,3 +24,4 @@ A simple tool to coregister the PSMove and DK2. Currently, all it does is get th
     * Alternatively, if you want to output the data to a file, try `psmdk2 > output.csv`
 9. Press & Hold the PSMove Move button to print data (to screen or file)
 10. Press PSMove select button to quit.
+11. Delete the first two lines from the output file.
