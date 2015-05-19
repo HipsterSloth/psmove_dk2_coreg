@@ -45,10 +45,7 @@ int main(int arg, char** args) {
                 ovrTrackingCap_Position, 0);
     ovrTrackingState dk2state;
     
-    float psm_x_offset = 0.0;
-    float psm_y_offset = 0.0;
-    float psm_z_offset = 0.0;
-    printf("psm_px,psm_py,psm_pz,psm_ox,psm_oy,psm_oz,psm_ow,dk2_px,dk2_py,dk2_pz,dk2_ox,dk2_oy,dk2_oz,dk2_ow\n");
+    printf("psm_px,psm_py,psm_pz,psm_ox,psm_oy,psm_oz,psm_ow,dk2_px,dk2_py,dk2_pz,dk2_ox,dk2_oy,dk2_oz,dk2_ow,dk2c_px,dk2c_py,dk2c_pz,dk2c_ox,dk2c_oy,dk2c_oz,dk2c_ow\n");
     while (1)
     {
         psmove_tracker_update_image(tracker);
@@ -70,20 +67,27 @@ int main(int arg, char** args) {
 
         if (buttons & Btn_CIRCLE)
         {
-            psm_x_offset = psm_px;
-            psm_y_offset = psm_py;
-            psm_z_offset = psm_pz;
             ovrHmd_RecenterPose(HMD);
-            psmove_reset_orientation(controllers[i]);
+            //psmove_reset_orientation(controllers[i]);
+            //psmove_tracker_reset_location(tracker, controllers[i]);
+            dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
+            printf("New DK2 camera leveled pose: %f, %f, %f, %f, %f, %f, %f\n",
+                100.0*dk2state.LeveledCameraPose.Position.x,
+                100.0*dk2state.LeveledCameraPose.Position.y,
+                100.0*dk2state.LeveledCameraPose.Position.z,
+                dk2state.LeveledCameraPose.Orientation.x,
+                dk2state.LeveledCameraPose.Orientation.y,
+                dk2state.LeveledCameraPose.Orientation.z,
+                dk2state.LeveledCameraPose.Orientation.w);
         }
 
         if (buttons & Btn_MOVE)
             printf("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-                psm_px-psm_x_offset, psm_py-psm_y_offset, psm_pz-psm_z_offset,
+                psm_px, psm_py, psm_pz,
                 psm_ox, psm_oy, psm_oz, psm_ow,
-                dk2state.HeadPose.ThePose.Position.x,
-                dk2state.HeadPose.ThePose.Position.y,
-                dk2state.HeadPose.ThePose.Position.z,
+                100.0*dk2state.HeadPose.ThePose.Position.x,
+                100.0*dk2state.HeadPose.ThePose.Position.y,
+                100.0*dk2state.HeadPose.ThePose.Position.z,
                 dk2state.HeadPose.ThePose.Orientation.x,
                 dk2state.HeadPose.ThePose.Orientation.y,
                 dk2state.HeadPose.ThePose.Orientation.z,
