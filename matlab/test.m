@@ -29,14 +29,18 @@ clear A b p h RMi Ti x
 
 %% Plot the result
 dk2_xyz = [poses.dk2_px, poses.dk2_py, poses.dk2_pz]';
-psm_xyz = [poses.psm_px, poses.psm_py, poses.psm_pz]';
+psm_xyz = [poses.psm_px, poses.psm_py,  poses.psm_pz]';
+lims = max([abs(psm_xyz)'; abs(dk2_xyz)']);
 subplot(2,2,1)
-plot3(dk2_xyz(1,:), dk2_xyz(2,:), dk2_xyz(3,:), 'k',...
-    psm_xyz(1,:), psm_xyz(2,:), psm_xyz(3,:), 'm',...
+plot3(dk2_xyz(1,:), dk2_xyz(3,:), dk2_xyz(2,:), 'k',...
+    psm_xyz(1,:), psm_xyz(3,:), psm_xyz(2,:), 'm',...
     'LineWidth', 3)
 xlabel('X')
 ylabel('Y')
 zlabel('Z')
+xlim([-lims(1) lims(1)]);
+ylim([-lims(2) lims(2)]);
+zlim([-lims(3) lims(3)]);
 legend('DK2', 'PSMove', 'Location', 'North')
 legend('boxoff')
 set(gca, 'FontSize', 14)
@@ -52,20 +56,23 @@ set(gca, 'FontSize', 14)
 title('Before Coreg.')
 box off
 
-psm_xyz = globalxfm * [psm_xyz; ones(1, n)];
+tpsm_xyz = globalxfm * [psm_xyz; ones(1, n)];
 subplot(2,2,3)
-plot3(poses.dk2_px, poses.dk2_py, poses.dk2_pz, 'k',...
-    psm_xyz(1,:), psm_xyz(2,:), psm_xyz(3,:), 'm',...
+plot3(dk2_xyz(1,:), dk2_xyz(3,:), dk2_xyz(2,:), 'k',...
+    tpsm_xyz(1,:), tpsm_xyz(3,:), tpsm_xyz(2,:), 'm',...
     'LineWidth', 3)
 xlabel('X')
 ylabel('Y')
 zlabel('Z')
+xlim([-lims(1) lims(1)]);
+ylim([-lims(2) lims(2)]);
+zlim([-lims(3) lims(3)]);
 set(gca, 'FontSize', 14)
 set(gca, 'Color', 'none')
 set(gca, 'CameraViewAngle', 8.7)
 
 subplot(2,2,4)
-hist(sqrt(sum((dk2_xyz - psm_xyz).^2)));
+hist(sqrt(sum((dk2_xyz - tpsm_xyz).^2)));
 xlabel('Eucl. Distance (cm)')
 ylabel('Count')
 title('After Coreg.')
