@@ -8,6 +8,20 @@
 #include "OVR_CAPI.h"
 #include "OVR_CAPI_Keys.h"
 
+void printDK2CameraPose(ovrHmd HMD) {
+    ovrTrackingState dk2state;
+    dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
+
+    printf("New DK2 camera leveled pose: %f, %f, %f, %f, %f, %f, %f\n",
+        100.0*dk2state.LeveledCameraPose.Position.x,
+        100.0*dk2state.LeveledCameraPose.Position.y,
+        100.0*dk2state.LeveledCameraPose.Position.z,
+        dk2state.LeveledCameraPose.Orientation.x,
+        dk2state.LeveledCameraPose.Orientation.y,
+        dk2state.LeveledCameraPose.Orientation.z,
+        dk2state.LeveledCameraPose.Orientation.w);
+}
+
 int main(int arg, char** args) {
 
     // Setup PSMove
@@ -35,17 +49,22 @@ int main(int arg, char** args) {
     assert(psmove_has_orientation(controllers[i]));
     int buttons = psmove_get_buttons(controllers[i]);
     
-    // TODO: Setup DK2
+    // Setup DK2
     ovrBool ovrresult;
+    ovrHmd HMD;
+    ovrTrackingState dk2state;
     ovrresult = ovr_Initialize(0);
-    ovrHmd HMD = ovrHmd_Create(0);
+    ovrHmd_Create(0, &HMD);
     ovrresult = ovrHmd_ConfigureTracking(HMD,
                 ovrTrackingCap_Orientation |
                 ovrTrackingCap_MagYawCorrection |
                 ovrTrackingCap_Position, 0);
-    ovrTrackingState dk2state;
-    
-    printf("psm_px,psm_py,psm_pz,psm_ox,psm_oy,psm_oz,psm_ow,dk2_px,dk2_py,dk2_pz,dk2_ox,dk2_oy,dk2_oz,dk2_ow,dk2c_px,dk2c_py,dk2c_pz,dk2c_ox,dk2c_oy,dk2c_oz,dk2c_ow\n");
+
+    // Print the initial camera pose
+    printDK2CameraPose(HMD);
+
+    // Print the data
+    printf("psm_px,psm_py,psm_pz,psm_ox,psm_oy,psm_oz,psm_ow,dk2_px,dk2_py,dk2_pz,dk2_ox,dk2_oy,dk2_oz,dk2_ow\n");
     while (1)
     {
         psmove_tracker_update_image(tracker);
@@ -60,26 +79,20 @@ int main(int arg, char** args) {
         float psm_ox, psm_oy, psm_oz, psm_ow;
         psmove_get_orientation(controllers[i], &psm_ow, &psm_ox, &psm_oy, &psm_oz);
 
-        // Update DK2 state
-        dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
-        
+        // Get PSMove buttons
         buttons = psmove_get_buttons(controllers[i]);
-
+        
         if (buttons & Btn_CIRCLE)
         {
             ovrHmd_RecenterPose(HMD);
+            printDK2CameraPose(HMD); //Whenever the Hmd pose is recentered, the camera position and yaw changes.
+
             //psmove_reset_orientation(controllers[i]);
             //psmove_tracker_reset_location(tracker, controllers[i]);
-            dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
-            printf("New DK2 camera leveled pose: %f, %f, %f, %f, %f, %f, %f\n",
-                100.0*dk2state.LeveledCameraPose.Position.x,
-                100.0*dk2state.LeveledCameraPose.Position.y,
-                100.0*dk2state.LeveledCameraPose.Position.z,
-                dk2state.LeveledCameraPose.Orientation.x,
-                dk2state.LeveledCameraPose.Orientation.y,
-                dk2state.LeveledCameraPose.Orientation.z,
-                dk2state.LeveledCameraPose.Orientation.w);
         }
+
+        // Get DK2 tracking state (contains pose)
+        dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
 
         if (buttons & Btn_MOVE)
             printf("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
