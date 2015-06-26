@@ -36,8 +36,8 @@ plot3(dk2_xyz(1,:), dk2_xyz(3,:), dk2_xyz(2,:), 'k',...
     psm_xyz(1,:), psm_xyz(3,:), psm_xyz(2,:), 'm',...
     'LineWidth', 3)
 xlabel('X')
-ylabel('Y')
-zlabel('Z')
+ylabel('Z')
+zlabel('Y')
 xlim([-lims(1) lims(1)]);
 ylim([-lims(2) lims(2)]);
 zlim([-lims(3) lims(3)]);
@@ -62,8 +62,8 @@ plot3(dk2_xyz(1,:), dk2_xyz(3,:), dk2_xyz(2,:), 'k',...
     tpsm_xyz(1,:), tpsm_xyz(3,:), tpsm_xyz(2,:), 'm',...
     'LineWidth', 3)
 xlabel('X')
-ylabel('Y')
-zlabel('Z')
+ylabel('Z')
+zlabel('Y')
 xlim([-lims(1) lims(1)]);
 ylim([-lims(2) lims(2)]);
 zlim([-lims(3) lims(3)]);
