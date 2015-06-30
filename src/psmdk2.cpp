@@ -104,7 +104,7 @@ Eigen::Matrix4f getDK2CameraInv44(ovrHmd HMD) {
     dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
 
     // Print to file - for testing in Matlab
-    char *fpath = psmove_util_get_file_path("output_camerapose.txt");
+    char *fpath = psmove_util_get_file_path("output_camerapose.csv");
     FILE *fp = fopen(fpath, "w");
     free(fpath);
     fprintf(fp, "%f, %f, %f, %f, %f, %f, %f\n",

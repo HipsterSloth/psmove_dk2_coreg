@@ -1,7 +1,7 @@
 %% Load the data
 
 poses = readtable(fullfile(pwd, 'output.txt'));
-camera_pose = csvread(fullfile(pwd, 'output_camerapose.txt'));
+camera_pose = csvread(fullfile(pwd, 'output_camerapose.csv'));
 camera_4x4 = makehgtform('translate', camera_pose(1:3),...
     'axisrotate', camera_pose(4:6), camera_pose(7));
 camera_invxform = [camera_4x4(1:3,1:3)', -camera_4x4(1:3,1:3)'*camera_4x4(1:3,4); 0 0 0 1];
