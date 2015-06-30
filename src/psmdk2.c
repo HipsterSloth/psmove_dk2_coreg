@@ -1,8 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <assert.h>
-#include <conio.h>
+//#include <conio.h>
 #include "psmove.h"
 #include "psmove_tracker.h"
 #include "OVR_CAPI.h"
@@ -130,7 +131,11 @@ int main(int arg, char** args) {
     ovrHmd HMD;
     ovrTrackingState dk2state;
     ovrresult = ovr_Initialize(0);
+#ifdef _WIN32
     ovrHmd_Create(0, &HMD);
+#else
+    HMD = ovrHmd_Create(0);
+#endif
     ovrresult = ovrHmd_ConfigureTracking(HMD,
                 ovrTrackingCap_Orientation |
                 ovrTrackingCap_MagYawCorrection |

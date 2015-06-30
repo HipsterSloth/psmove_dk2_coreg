@@ -4,26 +4,32 @@ A simple tool to coregister the PSMove and DK2. Currently, all it does is get th
 # Warnings
 
 1. There is no error checking.
-2. Mac support does not work yet.
-3. This is not intended for general use. It is intended only for a few specific programmers. I do not intend to make this user-friendly or to support it beyond getting basic functionality down.
+1. This is not intended for general use. It is intended only for a few specific programmers. I do not intend to make this user-friendly or to support it beyond getting basic functionality down.
 
 # Instructions
 
 1. Clone the repo.
-2. mkdir build
-3. cd build
-4. cmake-gui ..
-    * Only VS2013 supported right now.
-5. Build
-    * Open the VS2013 project
-    * Change the target to Release W64
-    * Build solution
-6. Copy the DLLs from 3rdparty/psmoveapi/lib/win64 to wherever your .exe was made (probably build/Release)
-7. Make sure your PSMove and DK2 are both in view of their cameras.
-8. Run psmdk2.exe
-    * Alternatively, if you want to output the data to a file, try `psmdk2 > output.csv`
-8. Attach the PSMove to the DK2.
-9. If you like, press the PSMove Circle button once to zero positional data for both PSMove and DK2, and to reset the PSMove orientation and DK2 yaw.
-10. Press & Hold the PSMove Move button to print data (to screen or file) while you move the objects in the camera frustrums.
-11. Press PSMove select button to quit.
-12. Delete the first two lines from the output file.
+1. mkdir build
+1. cd build
+1. cmake ..
+1. Build
+    * Windows
+        * Open the VS2013 project
+        * Change the target to Release W64
+        * Build solution
+    * Mac
+        * `make`
+1. Copy the shared objects from 3rdparty/psmoveapi/lib to wherever your executable was made
+1 Make sure your PSMove and DK2 are both in view of their cameras.
+1. Run psmdk2 executable
+    * Alternatively, if you want to output the data to a file, try `psmdk2 > output.txt`
+1. Attach the PSMove to the DK2.
+1. Press & Hold the PSMove Move button to print data (to screen or file) while you move the objects in the camera frustums.
+1. Press PSMove select button to quit.
+
+# Testing the result in Matlab
+
+1. Edit the output.txt file.
+    * Copy the camera position 7-values to `matlab\output_camerapose.txt`
+    * Cleanup the output.txt file by deleting any text (except the column headers) and save in the matlab folder.
+2. Run `matlab/test.m` to visualize the result of the coregistration.
