@@ -11,7 +11,7 @@ A simple tool to coregister the PSMove and DK2. Currently, all it does is get th
 1. Clone the repo.
 1. mkdir build
 1. cd build
-1. cmake ..
+1. cmake .. -G "Visual Studio 12 2013 Win64"
 1. Build
     * Windows
         * Open the VS2013 project

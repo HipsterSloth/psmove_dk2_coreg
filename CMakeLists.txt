@@ -4,20 +4,15 @@ project(PSMOVEDK2)
 
 #Includes
 include_directories(${PSMOVEDK2_SOURCE_DIR}/3rdparty/psmoveapi/include)
+include_directories(${PSMOVEDK2_SOURCE_DIR}/3rdparty/eigen)
 if(MSVC)
     include_directories(${PSMOVEDK2_SOURCE_DIR}/3rdparty/LibOVR/Win_0.6.0.1/Include)
-    include_directories(${PSMOVEDK2_SOURCE_DIR}/3rdparty/msvc-support/)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     include_directories(${PSMOVEDK2_SOURCE_DIR}/3rdparty/LibOVR/Mac_0.5.0.1/Include)
 endif()
 
 #Sources
-set(SOURCES src/psmdk2.c)
-if(MSVC)
-    list(APPEND SOURCES
-        ${PSMOVEDK2_SOURCE_DIR}/3rdparty/msvc-support/getopt.c
-        ${PSMOVEDK2_SOURCE_DIR}/3rdparty/msvc-support/unistd.c)
-endif()
+set(SOURCES src/psmdk2.cpp)
 add_executable(psmdk2 ${SOURCES})
 
 #Linked libraries
