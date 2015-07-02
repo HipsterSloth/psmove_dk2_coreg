@@ -11,7 +11,9 @@ A simple tool to coregister the PSMove and DK2. Currently, all it does is get th
 1. Clone the repo.
 1. mkdir build
 1. cd build
-1. cmake .. -G "Visual Studio 12 2013 Win64"
+1. Configure
+    * Windows: `cmake .. -G "Visual Studio 12 2013 Win64"`
+    * Mac: `cmake ..`
 1. Build
     * Windows
         * Open the VS2013 project
@@ -19,17 +21,14 @@ A simple tool to coregister the PSMove and DK2. Currently, all it does is get th
         * Build solution
     * Mac
         * `make`
-1. Copy the shared objects from 3rdparty/psmoveapi/lib to wherever your executable was made
+1. Copy the shared objects from 3rdparty/psmoveapi/lib to wherever your executable was made (e.g., Windows `psmove_dk2_coreg\build\Release`
 1 Make sure your PSMove and DK2 are both in view of their cameras.
 1. Run psmdk2 executable
-    * Alternatively, if you want to output the data to a file, try `psmdk2 > output.txt`
 1. Attach the PSMove to the DK2.
-1. Press & Hold the PSMove Move button to print data (to screen or file) while you move the objects in the camera frustums.
-1. Press PSMove select button to quit.
+1. Press & Hold the PSMove Move button to sample locations while moving the attached devices through their workspace.
+1. After 300 samples it will write the calculate pseye -> DK2_camera transform to a csv file in the home/.psmoveapi directory.
 
 # Testing the result in Matlab
 
-1. Edit the output.txt file.
-    * Copy the camera position 7-values to `matlab\output_camerapose.txt`
-    * Cleanup the output.txt file by deleting any text (except the column headers) and save in the matlab folder.
+1. Copy `<home>/.psmoveapi/output_camerapose.csv` and `<home>/.psmoveapi/output.txt` to `psmove_dk2_coreg\matlab`
 2. Run `matlab/test.m` to visualize the result of the coregistration.
