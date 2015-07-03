@@ -303,7 +303,7 @@ int main(int arg, char** args) {
             x(2), x(5), x(8), x(11));
 
         // Save XML to home directory
-        char *fpath = psmove_util_get_file_path("globalxform.csv");
+        char *fpath = psmove_util_get_file_path("transform.csv");
         FILE *fp = fopen(fpath, "w");
         free(fpath);
 
