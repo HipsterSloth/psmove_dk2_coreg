@@ -5,138 +5,58 @@
 #include "psmove.h"
 #include "psmove_tracker.h"
 #include "OVR_CAPI.h"
+#include "Extras/OVR_Math.h"
 
 #define NPOSES 300
 
-Eigen::Matrix3f vecKroneckerProduct(Eigen::Vector3f lh, Eigen::Vector3f rh)
-{
-    Eigen::Matrix3f out;
-    int i, j;
-    for (i = 0; i < 3; i++)
-    {
-        for (j = 0; j < 3; j++)
-        {
-            out(i, j) = lh(i)*rh(j);
-        }
-    }
-    return out;
-}
-
-Eigen::Matrix4f invertMat44(Eigen::Matrix4f in){
-    // Invert a 4x4 affine transformation matrix.
-    // Some tricks can be used for this specific type of matrix.
-
-    Eigen::Matrix4f out;
-
-    // Transpose inner 3x3
-    out.topLeftCorner(3, 3) = in.topLeftCorner(3, 3).transpose();
-
-    // Right column.
-    out.block<3, 1>(0, 3) = (-1 * in.topLeftCorner(3, 3).transpose()) * in.block<3, 1>(0, 3);
-
-    // Bottom row
-    out.row(3) << 0, 0, 0, 1;
-
-    return out;
-}
-
-float fixup(float val)
-{
-    float out;
-    if (abs(val) < 0.0000001)
-    {
-        out = 0;
-    }
-    else if(abs(val - 1) < 0.0000001)
-    {
-        out = 1;
-    }
-    else if (abs(val + 1) < 0.0000001)
-    {
-        out = -1;
-    }
-    else
-    {
-        out = val;
-    }
-    return out;
-}
-
-Eigen::Matrix3f skewSymm(Eigen::Vector3f in){
-    Eigen::Matrix3f out;
-    out <<
-         0,     -in(2), in(1),
-         in(2),  0,    -in(0),
-        -in(1),  in(0), 0;
-    return out;
-}
-
-Eigen::Matrix4f pose2mat(ovrPosef pose, float scale) {
-    Eigen::Matrix4f rotate = Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f translate = Eigen::Matrix4f::Identity();
-    ovrVector3f p = pose.Position;
-    ovrQuatf q = pose.Orientation;
-
-    // Scale is used only to convert units (e.g. m from DK2 to cm for PSMove)
-    p.x = p.x * scale;
-    p.y = p.y * scale;
-    p.z = p.z * scale;
-
-    Eigen::Vector3f u;
-    u << q.x, q.y, q.z;
-    u /= u.norm();
-
-    float c = fixup(cos(q.w));
-    float s = fixup(sin(q.w));
-
-    rotate.topLeftCorner(3, 3) = c*Eigen::Matrix3f::Identity() +
-        (1 - c)*vecKroneckerProduct(u, u.transpose()) +
-        s*skewSymm(u);
-
-    translate.block<3, 1>(0, 3) << p.x, p.y, p.z;
-
-    return translate * rotate;
-}
-
-Eigen::Matrix4f getDK2CameraInv44(ovrHmd HMD) {
+OVR::Matrix4f getDK2CameraInv44(ovrHmd HMD) {
 
     ovrTrackingState dk2state;
     dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
-
+    OVR::Posef campose(dk2state.CameraPose);
+    campose.Rotation.Normalize();  // Probably does nothing as the SDK returns normalized quats anyway.
+    campose.Translation *= 100.0;  // m -> cm
+    
     // Print to file - for testing in Matlab
     char *fpath = psmove_util_get_file_path("output_camerapose.csv");
     FILE *fp = fopen(fpath, "w");
     free(fpath);
     fprintf(fp, "%f, %f, %f, %f, %f, %f, %f\n",
-        100.0*dk2state.CameraPose.Position.x,
-        100.0*dk2state.CameraPose.Position.y,
-        100.0*dk2state.CameraPose.Position.z,
-        dk2state.CameraPose.Orientation.x,
-        dk2state.CameraPose.Orientation.y,
-        dk2state.CameraPose.Orientation.z,
-        dk2state.CameraPose.Orientation.w);
+        campose.Translation.x, campose.Translation.y, campose.Translation.z,
+        campose.Rotation.w, campose.Rotation.x, campose.Rotation.y, campose.Rotation.z);
     fclose(fp);
 
-    Eigen::Matrix4f dk2caminv;
-    dk2caminv = pose2mat(dk2state.CameraPose, 100.0);
-    /*
+    OVR::Matrix4f camMat(campose);
+    
     printf("Camera pose 4x4:\n");
     printf("%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
-        dk2caminv(0, 0), dk2caminv(0, 1), dk2caminv(0, 2), dk2caminv(0, 3),
-        dk2caminv(1, 0), dk2caminv(1, 1), dk2caminv(1, 2), dk2caminv(1, 3),
-        dk2caminv(2, 0), dk2caminv(2, 1), dk2caminv(2, 2), dk2caminv(2, 3),
-        dk2caminv(3, 0), dk2caminv(3, 1), dk2caminv(3, 2), dk2caminv(3, 3));
-    */
-    dk2caminv = invertMat44(dk2caminv);
-    /*
+        camMat.M[0][0], camMat.M[0][1], camMat.M[0][2], camMat.M[0][3],
+        camMat.M[1][0], camMat.M[1][1], camMat.M[1][2], camMat.M[1][3],
+        camMat.M[2][0], camMat.M[2][1], camMat.M[2][2], camMat.M[2][3],
+        camMat.M[3][0], camMat.M[3][1], camMat.M[3][2], camMat.M[3][3]);
+
+    camMat.InvertHomogeneousTransform();
     printf("Inverted camera pose 4x4:\n");
     printf("%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
-        dk2caminv(0, 0), dk2caminv(0, 1), dk2caminv(0, 2), dk2caminv(0, 3),
-        dk2caminv(1, 0), dk2caminv(1, 1), dk2caminv(1, 2), dk2caminv(1, 3),
-        dk2caminv(2, 0), dk2caminv(2, 1), dk2caminv(2, 2), dk2caminv(2, 3),
-        dk2caminv(3, 0), dk2caminv(3, 1), dk2caminv(3, 2), dk2caminv(3, 3));
-    */
-    return dk2caminv;
+        camMat.M[0][0], camMat.M[0][1], camMat.M[0][2], camMat.M[0][3],
+        camMat.M[1][0], camMat.M[1][1], camMat.M[1][2], camMat.M[1][3],
+        camMat.M[2][0], camMat.M[2][1], camMat.M[2][2], camMat.M[2][3],
+        camMat.M[3][0], camMat.M[3][1], camMat.M[3][2], camMat.M[3][3]);
+
+    return camMat;
+}
+
+void ovrmat2eigmat(OVR::Matrix4f& in_ovr, Eigen::Matrix4f& in_eig)
+{
+    // The following can probably be done with a simple memcpy but oh well.
+    int row, col;
+    for (row = 0; row < 4; row++)
+    {
+        for (col = 0; col < 4; col++)
+        {
+            in_eig(row, col) = in_ovr.M[row][col];
+        }
+    }
 }
 
 int main(int arg, char** args) {
@@ -146,7 +66,6 @@ int main(int arg, char** args) {
     PSMove **controllers = (PSMove **)calloc(count, sizeof(PSMove *));
     PSMoveTracker* tracker = psmove_tracker_new();
     psmove_tracker_set_mirror(tracker, PSMove_True);
-    
     int result;
     int i = 0;
     controllers[i] = psmove_connect_by_id(i);
@@ -182,17 +101,18 @@ int main(int arg, char** args) {
                 ovrTrackingCap_Position, 0);
 
     // Initialize variables for our loop.
-    Eigen::Matrix4f dk2mat;             // The DK2 HMD pose in 4x4
-    Eigen::Matrix4f camera_invxform;    // The DK2 camera pose inverse in 4x4
-    Eigen::Matrix4f psmovemat;          // The PSMove pose in 4x4
-    ovrPosef psmovepose;                // The psmove pose in ovrPosef (easy 4x4 conversion)
-    psmovepose.Orientation.w = 1;       // PSMove orientation not used by this algorithm.
-    psmovepose.Orientation.x = 0;
-    psmovepose.Orientation.y = 0;
-    psmovepose.Orientation.z = 0;
+    OVR::Posef dk2pose;               // The DK2 pose
+    OVR::Matrix4f dk2mat;             // The DK2 HMD pose in 4x4
+    OVR::Posef psmovepose;            // The psmove pose
+    OVR::Matrix4f psmovemat;          // The PSMove pose in 4x4
+    OVR::Matrix4f camera_invxform;    // The DK2 camera pose inverse in 4x4
+
+    psmovepose.Rotation = OVR::Quatf::Identity();  // PSMove orientation not used by this algorithm.
+    
     int p = 0;                          // NPOSES counter
     Eigen::MatrixXf A(NPOSES * 3, 15);  // X = A/b
     Eigen::VectorXf b(NPOSES * 3);
+    Eigen::Matrix4f dk2eig;             // DK2 pose in Eigen 4x4 mat
     Eigen::Matrix3f RMi;                // Transpose of inner 3x3 of DK2 pose
     
     // Start with current camera pose inverse
@@ -202,7 +122,7 @@ int main(int arg, char** args) {
     char *output_fpath = psmove_util_get_file_path("output.txt");
     FILE *output_fp = fopen(output_fpath, "w");
     free(output_fpath);
-    fprintf(output_fp, "psm_px,psm_py,psm_pz,psm_ox,psm_oy,psm_oz,psm_ow,dk2_px,dk2_py,dk2_pz,dk2_ox,dk2_oy,dk2_oz,dk2_ow\n");
+    fprintf(output_fp, "psm_px,psm_py,psm_pz,psm_ow,psm_ox,psm_oy,psm_oz,dk2_px,dk2_py,dk2_pz,dk2_ow,dk2_ox,dk2_oy,dk2_oz\n");
     printf("Hold the PSMove controller firmly against the DK2.\n");
     printf("Move them together through the workspace and press the Move button to sample (%d samples required).\n", NPOSES);
     fflush(stdout);
@@ -212,7 +132,7 @@ int main(int arg, char** args) {
         psmove_tracker_update_image(tracker);               // Refresh camera
         psmove_tracker_update(tracker, NULL);               // Update position based on refreshed image
         psmove_tracker_get_location(tracker, controllers[i],// Copy location to psmovepose
-            &psmovepose.Position.x, &psmovepose.Position.y, &psmovepose.Position.z);
+            &psmovepose.Translation.x, &psmovepose.Translation.y, &psmovepose.Translation.z);
 
         // Get PSMove buttons
         while (psmove_poll(controllers[i]));
@@ -227,25 +147,41 @@ int main(int arg, char** args) {
 
         // Get DK2 tracking state (contains pose)
         dk2state = ovrHmd_GetTrackingState(HMD, 0.0);
-
+        dk2pose = dk2state.HeadPose.ThePose;
+        dk2pose.Rotation.Normalize();
+        dk2pose.Translation *= 100.0;
+        
         // If MOVE button is pressed on PSMove, sample the position
         if (buttons & Btn_MOVE)
         {
             fprintf(output_fp, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-                psmovepose.Position.x, psmovepose.Position.y, psmovepose.Position.z,
-                0.0, 0.0, 0.0, 1.0,
-                100.0*dk2state.HeadPose.ThePose.Position.x,
-                100.0*dk2state.HeadPose.ThePose.Position.y,
-                100.0*dk2state.HeadPose.ThePose.Position.z,
-                dk2state.HeadPose.ThePose.Orientation.x,
-                dk2state.HeadPose.ThePose.Orientation.y,
-                dk2state.HeadPose.ThePose.Orientation.z,
-                dk2state.HeadPose.ThePose.Orientation.w);
+                psmovepose.Translation.x, psmovepose.Translation.y, psmovepose.Translation.z,
+                psmovepose.Rotation.w, psmovepose.Rotation.x, psmovepose.Rotation.y, psmovepose.Rotation.z,
+                dk2pose.Translation.x, dk2pose.Translation.y, dk2pose.Translation.z,
+                dk2pose.Rotation.w, dk2pose.Rotation.x, dk2pose.Rotation.y, dk2pose.Rotation.z);
 
-            dk2mat = pose2mat(dk2state.HeadPose.ThePose, 100.0);    // dk2 hmd pose in 44 mat
-            dk2mat = camera_invxform * dk2mat;                      // dk2 hmd pose 44 in dk2 camera space
-            RMi = dk2mat.topLeftCorner(3, 3).transpose();           // inner 33 transposed
-            psmovemat = pose2mat(psmovepose, 1.0);                  // psmove position in 44 mat
+            dk2mat = OVR::Matrix4f(dk2pose);
+            dk2mat = camera_invxform * dk2mat;
+            psmovemat = OVR::Matrix4f(psmovepose);
+
+            /*
+            if (p == 0)
+            {
+                printf("PSMove pose V7:\n");
+                printf("%f, %f, %f, %f, %f, %f, %f\n",
+                    psmovepose.Translation.x, psmovepose.Translation.y, psmovepose.Translation.z,
+                    psmovepose.Rotation.w, psmovepose.Rotation.x, psmovepose.Rotation.y, psmovepose.Rotation.z);
+                printf("PSMove pose 4x4:\n");
+                printf("%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
+                    psmovemat.M[0][0], psmovemat.M[0][1], psmovemat.M[0][2], psmovemat.M[0][3],
+                    psmovemat.M[1][0], psmovemat.M[1][1], psmovemat.M[1][2], psmovemat.M[1][3],
+                    psmovemat.M[2][0], psmovemat.M[2][1], psmovemat.M[2][2], psmovemat.M[2][3],
+                    psmovemat.M[3][0], psmovemat.M[3][1], psmovemat.M[3][2], psmovemat.M[3][3]);
+            }
+            */
+
+            ovrmat2eigmat(dk2mat, dk2eig);
+            RMi = dk2eig.topLeftCorner(3, 3).transpose();           // inner 33 transposed
 
             /*
             int i, j;
@@ -264,12 +200,12 @@ int main(int arg, char** args) {
             }
             */
 
-            A.block<3, 3>(p * 3, 0) = RMi * psmovemat(0, 3);
-            A.block<3, 3>(p * 3, 3) = RMi * psmovemat(1, 3);
-            A.block<3, 3>(p * 3, 6) = RMi * psmovemat(2, 3);
+            A.block<3, 3>(p * 3, 0) = RMi * psmovemat.M[0][3];
+            A.block<3, 3>(p * 3, 3) = RMi * psmovemat.M[1][3];
+            A.block<3, 3>(p * 3, 6) = RMi * psmovemat.M[2][3];
             A.block<3, 3>(p * 3, 9) = RMi;
             A.block<3, 3>(p * 3, 12) = -Eigen::Matrix3f::Identity();
-            b.segment(p * 3, 3) = RMi * dk2mat.block<3, 1>(0, 3);
+            b.segment(p * 3, 3) = RMi * dk2eig.block<3, 1>(0, 3);
             p++;
 
             printf("\rSampled %d / %d poses.", p, NPOSES);
@@ -297,10 +233,11 @@ int main(int arg, char** args) {
         x = A.colPivHouseholderQr().solve(b);
         //globalxfm = reshape(x(1:12), 3, 4);
         //localxfm = [1 0 0 x(12); 0 1 0 x(13); 0 0 1 x(14); 0 0 0 1];
-        printf("\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f\n",
+        printf("\nglobalxfm:\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f\n",
             x(0), x(3), x(6), x(9),
             x(1), x(4), x(7), x(10),
             x(2), x(5), x(8), x(11));
+        printf("\nlocalxfm:\n%f,%f,%f\n", x(12), x(13), x(14));
 
         // Save XML to home directory
         char *fpath = psmove_util_get_file_path("transform.csv");

@@ -2,8 +2,7 @@
 
 poses = readtable(fullfile(pwd, 'output.txt'));
 camera_pose = csvread(fullfile(pwd, 'output_camerapose.csv'));
-camera_4x4 = makehgtform('translate', camera_pose(1:3),...
-    'axisrotate', camera_pose(4:6), camera_pose(7));
+camera_4x4 = mat4fromvec7(camera_pose);
 camera_invxform = [camera_4x4(1:3,1:3)', -camera_4x4(1:3,1:3)'*camera_4x4(1:3,4); 0 0 0 1];
 
 n = size(poses, 1);
@@ -12,21 +11,28 @@ n = size(poses, 1);
 A = nan(3*n, 15);
 b = nan(3*n, 1);
 for p = 1:n
-    dk2mat = makehgtform(...
-        'translate', [poses.dk2_px(p), poses.dk2_py(p), poses.dk2_pz(p)],...
-        'axisrotate', [poses.dk2_ox(p), poses.dk2_oy(p), poses.dk2_oz(p)], poses.dk2_ow(p));
+    dk2vec = [...
+        poses.dk2_px(p) poses.dk2_py(p) poses.dk2_pz(p) ...
+        poses.dk2_ow(p) poses.dk2_ox(p) poses.dk2_oy(p) poses.dk2_oz(p)];
+    dk2mat = mat4fromvec7(dk2vec);
     dk2mat = camera_invxform * dk2mat;
     RMi = dk2mat(1:3, 1:3)';
     
-    psmovemat = makehgtform(...
-        'translate', [poses.psm_px(p), poses.psm_py(p), poses.psm_pz(p)],...
-        'axisrotate', [poses.psm_ox(p), poses.psm_oy(p), poses.psm_oz(p)], poses.psm_ow(p));
+    psmovevec = [...
+        poses.psm_px(p) poses.psm_py(p) poses.psm_pz(p) ...
+        poses.psm_ow(p) poses.psm_ox(p) poses.psm_oy(p) poses.psm_oz(p)];
+    psmovemat = mat4fromvec7(psmovevec);
     
     A((p-1)*3 + (1:3), :) = [RMi * psmovemat(1,4), RMi * psmovemat(2,4), RMi * psmovemat(3,4), RMi, -eye(3)];
     b((p-1)*3 + (1:3)) = RMi * dk2mat(1:3, 4);
 end
 
 x = A\b;
+
+%x = pinv(A)*b;
+
+%[Q,R,P] = qr(A);
+%x = R\(R'\(A'*b));
 
 globalxfm = reshape(x(1:12), 3, 4);
 localxfm = [1 0 0 x(12); 0 1 0 x(13); 0 0 1 x(14); 0 0 0 1];
