@@ -67,6 +67,7 @@ int main(int arg, char** args) {
     PSMoveTracker* tracker = psmove_tracker_new();
     psmove_tracker_set_mirror(tracker, PSMove_True);
     int result;
+    int isTracked = 0;
     int i = 0;
     controllers[i] = psmove_connect_by_id(i);
 
@@ -111,7 +112,6 @@ int main(int arg, char** args) {
     OVR::Posef dk2pose;               // The DK2 pose
     OVR::Matrix4f dk2mat;             // The DK2 HMD pose in 4x4
     OVR::Posef psmovepose;            // The psmove pose
-    OVR::Posef psmovepose_old;        // The last good pose.
     OVR::Matrix4f psmovemat;          // The PSMove pose in 4x4
     OVR::Matrix4f camera_invxform;    // The DK2 camera pose inverse in 4x4
 
@@ -138,7 +138,8 @@ int main(int arg, char** args) {
     {
         // Get PSMove position
         psmove_tracker_update_image(tracker);               // Refresh camera
-        psmove_tracker_update_cbb(tracker, NULL);               // Update position based on refreshed image
+        psmove_tracker_update_cbb(tracker, NULL);           // Update position based on refreshed image
+        isTracked = psmove_tracker_get_status(tracker, controllers[i]) == Tracker_TRACKING;
         psmove_tracker_get_location(tracker, controllers[i],// Copy location to psmovepose
             &psmovepose.Translation.x, &psmovepose.Translation.y, &psmovepose.Translation.z);
 
@@ -160,9 +161,7 @@ int main(int arg, char** args) {
         dk2pose.Translation *= 100.0;
         
         // If MOVE button is pressed on PSMove, sample the position
-        if (buttons & Btn_MOVE &&
-            !psmovepose.Translation.IsEqual(psmovepose_old.Translation)
-            && !(psmovepose.Translation.x==0 && psmovepose.Translation.y==0))
+        if (buttons & Btn_MOVE && isTracked)
         {
             fprintf(output_fp, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
                 psmovepose.Translation.x, psmovepose.Translation.y, psmovepose.Translation.z,
