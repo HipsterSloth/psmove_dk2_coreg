@@ -69,12 +69,19 @@ int main(int arg, char** args) {
     int result;
     int i = 0;
     controllers[i] = psmove_connect_by_id(i);
+
     while (1) {
-        result = psmove_tracker_enable(tracker, controllers[i]);
+        if (i == 0 && arg >= 3)
+        {
+            result = psmove_tracker_enable_with_color(tracker, controllers[i],
+                atoi(args[1]), atoi(args[2]), atoi(args[3]));
+            printf("Setting LEDS for controller 1 from command-line r: %i, g: %i, b: %i\n",
+                atoi(args[1]), atoi(args[2]), atoi(args[3]));
+        }
+        else {
+            result = psmove_tracker_enable(tracker, controllers[i]);
+        }
         if (result == Tracker_CALIBRATED) {
-            enum PSMove_Bool auto_update_leds =
-                psmove_tracker_get_auto_update_leds(tracker,
-                        controllers[i]);
             break;
         } else {
             printf("ERROR - retrying\n");
@@ -104,6 +111,7 @@ int main(int arg, char** args) {
     OVR::Posef dk2pose;               // The DK2 pose
     OVR::Matrix4f dk2mat;             // The DK2 HMD pose in 4x4
     OVR::Posef psmovepose;            // The psmove pose
+    OVR::Posef psmovepose_old;        // The last good pose.
     OVR::Matrix4f psmovemat;          // The PSMove pose in 4x4
     OVR::Matrix4f camera_invxform;    // The DK2 camera pose inverse in 4x4
 
@@ -130,7 +138,7 @@ int main(int arg, char** args) {
     {
         // Get PSMove position
         psmove_tracker_update_image(tracker);               // Refresh camera
-        psmove_tracker_update(tracker, NULL);               // Update position based on refreshed image
+        psmove_tracker_update_cbb(tracker, NULL);               // Update position based on refreshed image
         psmove_tracker_get_location(tracker, controllers[i],// Copy location to psmovepose
             &psmovepose.Translation.x, &psmovepose.Translation.y, &psmovepose.Translation.z);
 
@@ -152,7 +160,9 @@ int main(int arg, char** args) {
         dk2pose.Translation *= 100.0;
         
         // If MOVE button is pressed on PSMove, sample the position
-        if (buttons & Btn_MOVE)
+        if (buttons & Btn_MOVE &&
+            !psmovepose.Translation.IsEqual(psmovepose_old.Translation)
+            && !(psmovepose.Translation.x==0 && psmovepose.Translation.y==0))
         {
             fprintf(output_fp, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
                 psmovepose.Translation.x, psmovepose.Translation.y, psmovepose.Translation.z,
